@@ -1,0 +1,23 @@
+# Go
+*.test
+*.out
+
+# Vendored restic binaries (large, per-arch — fetched at build, not committed)
+/build/restic-*
+/build/bin/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/node_modules/
+
+# dotjez artifacts — local continuity only, never published (public repo)
+.jez/
+
+# Dev / secrets — never commit
+*.env
+.dev.vars
+*.plist.local
+
+# OS
+.DS_Store
