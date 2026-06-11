@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: hsl(0 0% 100%);
+  --color-fg: hsl(222 47% 11%);
+  --color-fg-muted: hsl(222 16% 45%);
+  --color-primary: hsl(221 83% 45%);
+  --color-primary-fg: hsl(0 0% 100%);
+  --color-muted: hsl(210 40% 97%);
+  --color-border: hsl(214 32% 91%);
+  --color-card: hsl(0 0% 100%);
+  --color-success: hsl(142 71% 40%);
+  --color-danger: hsl(0 72% 50%);
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Jez default: dim placeholders everywhere */
+::placeholder { color: hsl(222 16% 45% / 0.25); }
+
+/* The macOS hidden-inset title bar leaves the traffic lights floating; give the
+   header a drag region so the window can still be moved. */
+.titlebar-drag { --wails-draggable: drag; }
+.no-drag { --wails-draggable: no-drag; }

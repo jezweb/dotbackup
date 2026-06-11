@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/jezweb/dotbackup/internal/backup"
@@ -40,7 +39,7 @@ func RunScheduled(ctx context.Context, passwordCmd string) error {
 		if !f.Backup || !due(f.LastBackupAt, now, interval) {
 			continue
 		}
-		excludeFile, cleanup, err := writeExcludeFile(f.Excludes)
+		excludeFile, cleanup, err := backup.WriteExcludeFile(f.Excludes)
 		if err != nil {
 			return err
 		}
@@ -83,21 +82,4 @@ func due(last string, now time.Time, interval time.Duration) bool {
 		return true
 	}
 	return now.Sub(t) >= interval
-}
-
-// writeExcludeFile materialises restic's --exclude-file; restic reads patterns
-// from a file so they never crowd argv. Returns a cleanup closer.
-func writeExcludeFile(excludes []string) (string, func(), error) {
-	if len(excludes) == 0 {
-		return "", func() {}, nil
-	}
-	f, err := os.CreateTemp("", "dotbackup-excludes-*.txt")
-	if err != nil {
-		return "", func() {}, err
-	}
-	for _, e := range excludes {
-		fmt.Fprintln(f, e)
-	}
-	_ = f.Close()
-	return f.Name(), func() { _ = os.Remove(f.Name()) }, nil
 }

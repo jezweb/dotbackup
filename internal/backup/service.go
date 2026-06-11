@@ -12,6 +12,24 @@ import (
 	"github.com/jezweb/dotbackup/internal/secret"
 )
 
+// WriteExcludeFile materialises restic's --exclude-file so patterns never crowd
+// argv. Returns the file path, a cleanup closer, and any error. Empty excludes
+// yield an empty path (restic skips --exclude-file).
+func WriteExcludeFile(excludes []string) (string, func(), error) {
+	if len(excludes) == 0 {
+		return "", func() {}, nil
+	}
+	f, err := os.CreateTemp("", "dotbackup-excludes-*.txt")
+	if err != nil {
+		return "", func() {}, err
+	}
+	for _, e := range excludes {
+		fmt.Fprintln(f, e)
+	}
+	_ = f.Close()
+	return f.Name(), func() { _ = os.Remove(f.Name()) }, nil
+}
+
 // ResticBin resolves the restic binary. Dev uses an override or the homebrew path;
 // the shipped app points this at the vendored binary inside the app bundle.
 func ResticBin() string {
