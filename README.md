@@ -20,7 +20,7 @@ Phase 1 (backup, macOS first) — in progress.
 | 2 | Setup skill + config (`restic init`, app reads config) | ✅ config→engine path proven; user-paste R2 token (`skills/setup-dotbackup`) |
 | 3 | Wails UI — the one-screen folder list + backup-now | ✅ app builds + renders, bindings live over the bridge; shipped binary's headless modes verified |
 | 4 | launchd scheduling (headless runner) | ✅ scheduled backup lands with app closed; `Standard` QoS + `--retry-lock` |
-| 5 | Restore browser (snapshot → tree → restore) | |
+| 5 | Restore browser (snapshot → tree → restore) | ✅ dialog wired to proven engine; `Ls`+`Restore`-by-path verified live |
 | 6 | Excludes / retention / secrets handling + encryption proof | |
 
 ## Architecture

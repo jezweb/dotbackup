@@ -44,6 +44,8 @@ func main() {
 		initRepo()
 	case "validate":
 		validate()
+	case "restore-test":
+		restoreTest()
 	case "--run-scheduled", "run-scheduled":
 		self, err := os.Executable()
 		check(err)
@@ -196,6 +198,65 @@ func validate() {
 	snaps, err := runner.Snapshots(context.Background())
 	check(err)
 	fmt.Printf("✓ engine reachable from saved config — %d snapshot(s)\n", len(snaps))
+}
+
+// restoreTest exercises the same Ls -> Restore path the UI's RestoreDialog drives
+// (SnapshotTree -> RestoreFile), against the saved config's repo.
+func restoreTest() {
+	ctx := context.Background()
+	self, err := os.Executable()
+	check(err)
+	cfg, err := config.Load()
+	check(err)
+	runner, err := backup.NewRunner(cfg, self+" print-passphrase")
+	check(err)
+
+	snaps, err := runner.Snapshots(ctx)
+	check(err)
+	if len(snaps) == 0 {
+		fail("no snapshots to restore from")
+	}
+	snapID := snaps[len(snaps)-1].ID
+
+	nodes, err := runner.Ls(ctx, snapID)
+	check(err)
+	var file *restic.Node
+	for i := range nodes {
+		if nodes[i].Type == "file" {
+			file = &nodes[i]
+			break
+		}
+	}
+	if file == nil {
+		fail("snapshot has no files")
+	}
+	fmt.Printf("→ ls snapshot %s: restoring single file %s\n", short(snapID), file.Path)
+
+	dst, err := os.MkdirTemp("", "dotbackup-restoretest-")
+	check(err)
+	defer os.RemoveAll(dst)
+	check(runner.Restore(ctx, snapID, dst, []string{file.Path}, nil))
+
+	restored := filepath.Join(dst, file.Path)
+	data, err := os.ReadFile(restored)
+	check(err)
+	if len(data) == 0 {
+		fail("restored file is empty")
+	}
+	fmt.Printf("✓ restored %d bytes; first line: %q\n", len(data), firstLine(data))
+	fmt.Println("RESTORE PATH OK ✓ (Ls + Restore by include path, the dialog's path)")
+}
+
+func firstLine(b []byte) string {
+	for i, c := range b {
+		if c == '\n' {
+			return string(b[:i])
+		}
+	}
+	if len(b) > 40 {
+		return string(b[:40])
+	}
+	return string(b)
 }
 
 func randomBytes(n int) []byte {

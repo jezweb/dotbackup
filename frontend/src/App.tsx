@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Cloud, FolderPlus, HardDriveUpload, RefreshCw, Trash2,
-  Check, Loader2, ShieldCheck, AlertTriangle,
+  Check, Loader2, ShieldCheck, AlertTriangle, Undo2,
 } from 'lucide-react'
+import { RestoreDialog } from './components/RestoreDialog'
 import {
   GetStatus, ListSnapshots, BackupNow, BackupAll,
   PickFolder, AddFolder, RemoveFolder, SetFolderBackup,
@@ -33,6 +34,7 @@ export default function App() {
   const [progress, setProgress] = useState<Record<string, Progress>>({})
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [showRestore, setShowRestore] = useState(false)
 
   const refresh = useCallback(async () => {
     const s = await GetStatus()
@@ -175,9 +177,17 @@ export default function App() {
         >
           <HardDriveUpload className="h-4 w-4" /> Back up all
         </button>
+        <button
+          onClick={() => setShowRestore(true)} disabled={snapshots.length === 0}
+          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-muted disabled:opacity-40"
+        >
+          <Undo2 className="h-4 w-4" /> Restore
+        </button>
         <div className="flex-1" />
         <div className="text-xs text-fg-muted">{snapshots.length} snapshot{snapshots.length === 1 ? '' : 's'}</div>
       </footer>
+
+      {showRestore && <RestoreDialog onClose={() => setShowRestore(false)} />}
     </div>
   )
 }
