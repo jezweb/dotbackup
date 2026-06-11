@@ -12,7 +12,11 @@ live multi-device sync (the goannad core).
 
 ## Status
 
-Phase 1 (backup, macOS first) — in progress.
+Phase 1 (backup, macOS first) — **all 6 slices built and verified live against
+real Cloudflare R2 + real launchd.** Remaining before calling it shipped: an
+end-to-end run of `setup-dotbackup` against a *fresh* bucket + dashboard token,
+interactive UI dogfooding, app code-signing/notarisation, and a multi-GB
+large-file smoke test.
 
 | Slice | What | State |
 |---|---|---|
@@ -21,7 +25,7 @@ Phase 1 (backup, macOS first) — in progress.
 | 3 | Wails UI — the one-screen folder list + backup-now | ✅ app builds + renders, bindings live over the bridge; shipped binary's headless modes verified |
 | 4 | launchd scheduling (headless runner) | ✅ scheduled backup lands with app closed; `Standard` QoS + `--retry-lock` |
 | 5 | Restore browser (snapshot → tree → restore) | ✅ dialog wired to proven engine; `Ls`+`Restore`-by-path verified live |
-| 6 | Excludes / retention / secrets handling + encryption proof | |
+| 6 | Excludes / retention / secrets handling + encryption proof | ✅ `secrets/**` excluded from snapshot; wrong passphrase rejected; R2 objects ciphertext |
 
 ## Architecture
 
