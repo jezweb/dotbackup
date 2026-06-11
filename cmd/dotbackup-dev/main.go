@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/jezweb/dotbackup/internal/backup"
+	"github.com/jezweb/dotbackup/internal/config"
 	"github.com/jezweb/dotbackup/internal/restic"
 	"github.com/jezweb/dotbackup/internal/secret"
 )
@@ -37,6 +39,10 @@ func main() {
 		fmt.Print(pass)
 	case "gate":
 		gate()
+	case "init":
+		initRepo()
+	case "validate":
+		validate()
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n", os.Args[1])
 		os.Exit(2)
@@ -144,6 +150,35 @@ func gate() {
 	fmt.Println("✓ selective restore excluded beta.txt")
 
 	fmt.Println("\nGATE 1 PASS ✓  init · backup(stream) · snapshots · ls · selective restore · byte-identical")
+}
+
+// initRepo mirrors the setup skill's `restic init` step: load the config the
+// skill wrote, build the runner from it + the keychain, initialise the repo.
+func initRepo() {
+	self, err := os.Executable()
+	check(err)
+	cfg, err := config.Load()
+	check(err)
+	runner, err := backup.NewRunner(cfg, self+" print-passphrase")
+	check(err)
+	check(runner.Init(context.Background()))
+	fmt.Printf("✓ repo initialised: s3:%s/%s/%s\n", cfg.Repo.Endpoint, cfg.Repo.Bucket, cfg.Repo.Prefix)
+}
+
+// validate mirrors the app launch path: read the saved config, reach the engine,
+// list snapshots. Proves the config the skill writes drives restic.
+func validate() {
+	self, err := os.Executable()
+	check(err)
+	cfg, err := config.Load()
+	check(err)
+	fmt.Printf("→ config: user=%s bucket=%s prefix=%s folders=%d\n",
+		cfg.User, cfg.Repo.Bucket, cfg.Repo.Prefix, len(cfg.Folders))
+	runner, err := backup.NewRunner(cfg, self+" print-passphrase")
+	check(err)
+	snaps, err := runner.Snapshots(context.Background())
+	check(err)
+	fmt.Printf("✓ engine reachable from saved config — %d snapshot(s)\n", len(snaps))
 }
 
 func randomBytes(n int) []byte {

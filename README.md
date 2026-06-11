@@ -17,7 +17,7 @@ Phase 1 (backup, macOS first) — in progress.
 | Slice | What | State |
 |---|---|---|
 | 1 | Engine wrapper (`restic` over `--json`) + keychain indirection | ✅ passing its gate against real R2 |
-| 2 | Setup skill + config (mint bucket-scoped R2 token, `restic init`) | next |
+| 2 | Setup skill + config (`restic init`, app reads config) | ✅ config→engine path proven; user-paste R2 token (`skills/setup-dotbackup`) |
 | 3 | Wails UI — the one-screen folder list + backup-now | |
 | 4 | launchd scheduling (headless runner) | |
 | 5 | Restore browser (snapshot → tree → restore) | |
