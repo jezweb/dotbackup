@@ -18,8 +18,8 @@ Phase 1 (backup, macOS first) — in progress.
 |---|---|---|
 | 1 | Engine wrapper (`restic` over `--json`) + keychain indirection | ✅ passing its gate against real R2 |
 | 2 | Setup skill + config (`restic init`, app reads config) | ✅ config→engine path proven; user-paste R2 token (`skills/setup-dotbackup`) |
-| 3 | Wails UI — the one-screen folder list + backup-now | |
-| 4 | launchd scheduling (headless runner) | |
+| 4 | launchd scheduling (headless runner) | ✅ scheduled backup lands with app closed; `Standard` QoS + `--retry-lock` |
+| 3 | Wails UI — the one-screen folder list + backup-now | next (needs dogfooding) |
 | 5 | Restore browser (snapshot → tree → restore) | |
 | 6 | Excludes / retention / secrets handling + encryption proof | |
 

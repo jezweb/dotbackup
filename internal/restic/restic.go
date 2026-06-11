@@ -28,6 +28,11 @@ type RetentionPolicy struct {
 
 const scanBuf = 8 * 1024 * 1024
 
+// lockRetry lets concurrent repo operations wait for a lock rather than failing —
+// the app listing snapshots must not break a scheduled backup's forget, and vice
+// versa. restic accepts --retry-lock on every lock-taking command (not init).
+var lockRetry = []string{"--retry-lock", "2m"}
+
 func (r *Runner) command(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, r.Bin, args...)
 	cmd.Env = r.Env
@@ -61,7 +66,7 @@ func (r *Runner) Init(ctx context.Context) error {
 // Backup streams `restic backup --json`, calling onProgress on each status line
 // and returning the final summary.
 func (r *Runner) Backup(ctx context.Context, paths []string, excludeFile string, onProgress func(BackupStatus)) (BackupSummary, error) {
-	args := []string{"backup", "--json"}
+	args := append([]string{"backup", "--json"}, lockRetry...)
 	if excludeFile != "" {
 		args = append(args, "--exclude-file", excludeFile)
 	}
@@ -102,7 +107,7 @@ func (r *Runner) Backup(ctx context.Context, paths []string, excludeFile string,
 }
 
 func (r *Runner) Snapshots(ctx context.Context) ([]Snapshot, error) {
-	out, err := r.run(ctx, "snapshots", "--json")
+	out, err := r.run(ctx, append([]string{"snapshots", "--json"}, lockRetry...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +122,7 @@ func (r *Runner) Snapshots(ctx context.Context) ([]Snapshot, error) {
 // line then one line per node; we accept either the older struct_type or newer
 // message_type tagging, and fall back to shape detection.
 func (r *Runner) Ls(ctx context.Context, snapshotID string) ([]Node, error) {
-	out, err := r.run(ctx, "ls", snapshotID, "--json")
+	out, err := r.run(ctx, append([]string{"ls", snapshotID, "--json"}, lockRetry...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +156,7 @@ func (r *Runner) Ls(ctx context.Context, snapshotID string) ([]Node, error) {
 // Restore extracts a snapshot (optionally filtered by include patterns) into
 // target. restic recreates the original absolute path tree under target.
 func (r *Runner) Restore(ctx context.Context, snapshotID, target string, include []string, onProgress func(RestoreStatus)) error {
-	args := []string{"restore", snapshotID, "--target", target, "--json"}
+	args := append([]string{"restore", snapshotID, "--target", target, "--json"}, lockRetry...)
 	for _, inc := range include {
 		args = append(args, "--include", inc)
 	}
@@ -183,7 +188,7 @@ func (r *Runner) Restore(ctx context.Context, snapshotID, target string, include
 }
 
 func (r *Runner) Forget(ctx context.Context, policy RetentionPolicy) error {
-	args := []string{"forget", "--json"}
+	args := append([]string{"forget", "--json"}, lockRetry...)
 	if policy.KeepDaily > 0 {
 		args = append(args, "--keep-daily", fmt.Sprint(policy.KeepDaily))
 	}
@@ -201,6 +206,6 @@ func (r *Runner) Forget(ctx context.Context, policy RetentionPolicy) error {
 }
 
 func (r *Runner) Check(ctx context.Context) error {
-	_, err := r.run(ctx, "check")
+	_, err := r.run(ctx, append([]string{"check"}, lockRetry...)...)
 	return err
 }

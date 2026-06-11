@@ -24,6 +24,7 @@ import (
 	"github.com/jezweb/dotbackup/internal/backup"
 	"github.com/jezweb/dotbackup/internal/config"
 	"github.com/jezweb/dotbackup/internal/restic"
+	"github.com/jezweb/dotbackup/internal/schedule"
 	"github.com/jezweb/dotbackup/internal/secret"
 )
 
@@ -43,6 +44,22 @@ func main() {
 		initRepo()
 	case "validate":
 		validate()
+	case "--run-scheduled", "run-scheduled":
+		self, err := os.Executable()
+		check(err)
+		check(schedule.RunScheduled(context.Background(), self+" print-passphrase"))
+	case "schedule-install":
+		self, err := os.Executable()
+		check(err)
+		interval := 3600
+		if v := os.Getenv("DOTBACKUP_INTERVAL"); v != "" {
+			fmt.Sscanf(v, "%d", &interval)
+		}
+		check(schedule.Install(self, interval, os.Getenv("DOTBACKUP_RUNATLOAD") == "1"))
+		fmt.Printf("✓ LaunchAgent %s installed (interval=%ds runAtLoad=%s)\n", schedule.Label, interval, os.Getenv("DOTBACKUP_RUNATLOAD"))
+	case "schedule-uninstall":
+		check(schedule.Uninstall())
+		fmt.Printf("✓ LaunchAgent %s removed\n", schedule.Label)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n", os.Args[1])
 		os.Exit(2)
