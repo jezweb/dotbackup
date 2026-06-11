@@ -60,6 +60,16 @@ var plistTmpl = template.Must(template.New("plist").Parse(`<?xml version="1.0" e
 
 func domain() string { return fmt.Sprintf("gui/%d", os.Getuid()) }
 
+// IsInstalled reports whether the LaunchAgent plist is present.
+func IsInstalled() bool {
+	p, err := plistPath()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(p)
+	return err == nil
+}
+
 // Install writes the LaunchAgent plist and (re)bootstraps it into the user's GUI
 // domain so backups run with the app closed.
 func Install(binPath string, intervalSec int, runAtLoad bool) error {

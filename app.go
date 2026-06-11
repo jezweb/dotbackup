@@ -4,13 +4,24 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/user"
+	"strings"
 	"time"
 
 	"github.com/jezweb/dotbackup/internal/backup"
 	"github.com/jezweb/dotbackup/internal/config"
 	"github.com/jezweb/dotbackup/internal/restic"
+	"github.com/jezweb/dotbackup/internal/schedule"
+	"github.com/jezweb/dotbackup/internal/secret"
 	rt "github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+func currentUser() string {
+	if u, err := user.Current(); err == nil && u.Username != "" {
+		return u.Username
+	}
+	return "default"
+}
 
 // App is the Wails-bound surface. Every method here is callable from the
 // frontend; none of them ever returns a secret. The engine specifics stay in
@@ -230,4 +241,98 @@ func (a *App) RestoreFile(snapshotID, includePath, targetDir string) error {
 
 func (a *App) PickRestoreTarget() (string, error) {
 	return rt.OpenDirectoryDialog(a.ctx, rt.OpenDialogOptions{Title: "Restore into which folder?"})
+}
+
+// --- first-run setup (in-app, paste R2 creds) ---
+
+type SetupInput struct {
+	Endpoint        string `json:"endpoint"`
+	Bucket          string `json:"bucket"`
+	AccessKeyID     string `json:"accessKeyId"`
+	SecretAccessKey string `json:"secretAccessKey"`
+}
+
+// Setup connects the app to an R2 bucket: it stores the S3 secret and a freshly
+// generated repo passphrase in the keychain, initialises the encrypted
+// repository, and writes the config. It returns the passphrase ONCE so the UI can
+// show the recovery moment. The passphrase is never stored anywhere we hand back
+// to the user later — losing it means losing the data.
+func (a *App) Setup(in SetupInput) (string, error) {
+	endpoint := strings.TrimRight(strings.TrimSpace(in.Endpoint), "/")
+	bucket := strings.TrimSpace(in.Bucket)
+	akid := strings.TrimSpace(in.AccessKeyID)
+	s3secret := strings.TrimSpace(in.SecretAccessKey)
+	if endpoint == "" || bucket == "" || akid == "" || s3secret == "" {
+		return "", fmt.Errorf("all four fields are required")
+	}
+	if !strings.HasPrefix(endpoint, "http") {
+		endpoint = "https://" + endpoint
+	}
+
+	usr := currentUser()
+	pass, err := secret.GeneratePassphrase()
+	if err != nil {
+		return "", err
+	}
+	if err := secret.StoreS3Secret(usr, s3secret); err != nil {
+		return "", fmt.Errorf("store S3 secret in keychain: %w", err)
+	}
+	if err := secret.StorePassphrase(usr, pass); err != nil {
+		return "", fmt.Errorf("store passphrase in keychain: %w", err)
+	}
+
+	cfg := &config.Config{
+		Version:  1,
+		User:     usr,
+		Repo:     config.Repo{Endpoint: endpoint, Bucket: bucket, AccessKeyID: akid},
+		Schedule: config.Schedule{EveryHours: 6},
+	}
+	if err := cfg.Save(); err != nil {
+		return "", err
+	}
+	self, _ := os.Executable()
+	r, err := backup.NewRunner(cfg, self+" --print-passphrase")
+	if err != nil {
+		return "", err
+	}
+	if err := r.Init(a.ctx); err != nil {
+		// roll back the half-written config so the user can retry cleanly
+		return "", fmt.Errorf("could not connect to the bucket (check the endpoint, bucket name, and keys): %w", err)
+	}
+	return pass, nil
+}
+
+// --- schedule ---
+
+type ScheduleView struct {
+	Enabled    bool `json:"enabled"`
+	EveryHours int  `json:"everyHours"`
+}
+
+func (a *App) GetSchedule() ScheduleView {
+	cfg, err := config.Load()
+	hours := 6
+	if err == nil && cfg.Schedule.EveryHours > 0 {
+		hours = cfg.Schedule.EveryHours
+	}
+	return ScheduleView{Enabled: schedule.IsInstalled(), EveryHours: hours}
+}
+
+func (a *App) SetSchedule(enabled bool, everyHours int) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	if everyHours <= 0 {
+		everyHours = 6
+	}
+	cfg.Schedule.EveryHours = everyHours
+	if err := cfg.Save(); err != nil {
+		return err
+	}
+	if !enabled {
+		return schedule.Uninstall()
+	}
+	self, _ := os.Executable()
+	return schedule.Install(self, everyHours*3600, false)
 }

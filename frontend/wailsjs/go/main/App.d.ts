@@ -8,6 +8,8 @@ export function BackupAll():Promise<void>;
 
 export function BackupNow(arg1:string):Promise<void>;
 
+export function GetSchedule():Promise<main.ScheduleView>;
+
 export function GetStatus():Promise<main.StatusView>;
 
 export function ListSnapshots():Promise<Array<main.SnapshotView>>;
@@ -21,5 +23,9 @@ export function RemoveFolder(arg1:string):Promise<void>;
 export function RestoreFile(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SetFolderBackup(arg1:string,arg2:boolean):Promise<void>;
+
+export function SetSchedule(arg1:boolean,arg2:number):Promise<void>;
+
+export function Setup(arg1:main.SetupInput):Promise<string>;
 
 export function SnapshotTree(arg1:string):Promise<Array<main.NodeView>>;

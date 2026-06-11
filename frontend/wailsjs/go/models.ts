@@ -36,6 +36,38 @@ export namespace main {
 	        this.size = source["size"];
 	    }
 	}
+	export class ScheduleView {
+	    enabled: boolean;
+	    everyHours: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.everyHours = source["everyHours"];
+	    }
+	}
+	export class SetupInput {
+	    endpoint: string;
+	    bucket: string;
+	    accessKeyId: string;
+	    secretAccessKey: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetupInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.endpoint = source["endpoint"];
+	        this.bucket = source["bucket"];
+	        this.accessKeyId = source["accessKeyId"];
+	        this.secretAccessKey = source["secretAccessKey"];
+	    }
+	}
 	export class SnapshotView {
 	    id: string;
 	    shortId: string;

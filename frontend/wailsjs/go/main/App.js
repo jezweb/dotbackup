@@ -14,6 +14,10 @@ export function BackupNow(arg1) {
   return window['go']['main']['App']['BackupNow'](arg1);
 }
 
+export function GetSchedule() {
+  return window['go']['main']['App']['GetSchedule']();
+}
+
 export function GetStatus() {
   return window['go']['main']['App']['GetStatus']();
 }
@@ -40,6 +44,14 @@ export function RestoreFile(arg1, arg2, arg3) {
 
 export function SetFolderBackup(arg1, arg2) {
   return window['go']['main']['App']['SetFolderBackup'](arg1, arg2);
+}
+
+export function SetSchedule(arg1, arg2) {
+  return window['go']['main']['App']['SetSchedule'](arg1, arg2);
+}
+
+export function Setup(arg1) {
+  return window['go']['main']['App']['Setup'](arg1);
 }
 
 export function SnapshotTree(arg1) {
